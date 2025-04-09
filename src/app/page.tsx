@@ -1,6 +1,38 @@
+'use client'; // Add this directive for using state and effects
+
 import Image from "next/image";
+import { useState } from 'react'; // Import useState
 
 export default function Home() {
+  const [result, setResult] = useState<string>(''); // State to hold the result
+  const [isLoading, setIsLoading] = useState<boolean>(false); // State for loading indicator
+  const [error, setError] = useState<string | null>(null); // State for errors
+
+  // Function to call our new API route
+  const callGeminiApi = async () => {
+    setIsLoading(true);
+    setError(null);
+    setResult('');
+    try {
+      const response = await fetch('/api/gemini', { method: 'POST' });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'API request failed');
+      }
+      const data = await response.json();
+      setResult(data.text);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
+      console.error("Error calling /api/gemini:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
@@ -24,6 +56,27 @@ export default function Home() {
             Save and see your changes instantly.
           </li>
         </ol>
+
+        {/* --- Gemini API Interaction --- */}
+        <div className="flex flex-col gap-4 items-center w-full">
+          <button
+            onClick={callGeminiApi}
+            disabled={isLoading}
+            className="rounded-full bg-blue-500 text-white px-5 py-2 hover:bg-blue-600 disabled:bg-gray-400"
+          >
+            {isLoading ? 'Loading...' : 'Ask Gemini for a Fun Fact'}
+          </button>
+          {error && (
+            <p className="text-red-500 text-sm">Error: {error}</p>
+          )}
+          {result && (
+            <div className="mt-4 p-4 border rounded bg-gray-100 dark:bg-gray-800 w-full max-w-md">
+              <p className="font-semibold">Gemini Says:</p>
+              <p>{result}</p>
+            </div>
+          )}
+        </div>
+        {/* --- End Gemini API Interaction --- */}
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
